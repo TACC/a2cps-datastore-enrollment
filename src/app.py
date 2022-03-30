@@ -35,7 +35,7 @@ app = dash.Dash(__name__,
 # Page component Parts
 # ----------------------------------------------------------------------------
 
-header = html.Div(html.H1('A2CPS Blood Draw Report'))
+header = html.Div(html.H1('A2CPS Generic Template Report'))
 
 if report_df.empty:
     data_check = "Can't access data"
