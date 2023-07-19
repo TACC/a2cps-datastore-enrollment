@@ -4,8 +4,7 @@
 version: "3"
 services:
   datastore_api_simple:
-    build: . #/datastore_client_new
-    # dockerfile: Dockerfile
+    build: . 
     ports:
       - 8890:8050
     dns:
@@ -14,8 +13,8 @@ services:
     stdin_open: true
     tty: true
     command: ["gunicorn", "--reload", "-b :8050",  "-t 90", "app:server"]
-    container_name: datastore_api_simple
-    # hostname: datastore_client_new
+    container_name: datastore_enrollment
+    hostname: datastore_enrollment
     volumes:
       - ./src:/app
     env_file:
