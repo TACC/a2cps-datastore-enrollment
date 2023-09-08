@@ -126,18 +126,19 @@ def serve_layout():
     # print(page_meta_dict)
 
 
-    if api_json['data']['consented']:        
+    if api_json['data']['consented']:                
         consented = pd.DataFrame(api_json['data']['consented'])
         enrolled =  get_enrollment_dataframe(consented)
-        print(enrolled.columns)
         
         enrollment_count = enrollment_rollup(enrolled, 'obtain_month', ['mcc','screening_site','surgery_type','Site'], 'Monthly')
         mcc1_enrollments = get_site_enrollments(enrollment_count, 1).reset_index()
         mcc2_enrollments = get_site_enrollments(enrollment_count, 2).reset_index()
+        
         enrollment_expectations_df = get_enrollment_expectations()
         monthly_expectations = get_enrollment_expectations_monthly(enrollment_expectations_df)
         summary_rollup = rollup_enrollment_expectations(enrolled, enrollment_expectations_df, monthly_expectations)
-        print(summary_rollup.columns)
+        summary_rollup_formatted = format_rollup_enrollment_expectations(summary_rollup)
+        
         expected_plot_df = get_plot_date(enrolled, summary_rollup)
         summary_options_list = [(x, y) for x in summary_rollup.mcc.unique() for y in summary_rollup.surgery_type.unique()]
         tab_summary_content_children = []

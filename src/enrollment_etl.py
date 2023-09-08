@@ -157,7 +157,7 @@ def get_display_dictionary(display_terms, api_field, api_value, display_col):
 
 
 def get_enrollment_dataframe(consented_df):
-    # Add columns for enrollment report
+    """Add period / datetime columns for enrollment report"""
     try:
         # Select Subset of columns
         enroll_cols = ['record_id','main_record_id','obtain_date','ewdateterm','mcc', 'screening_site', 'surgery_type']
@@ -199,6 +199,7 @@ def get_enrollment_dataframe(consented_df):
 #     return enrolled
 
 def enrollment_rollup(enrollment_df, index_col, grouping_cols, count_col_name, cumsum=True, fill_na_value = 0):
+    """Roll up enrollment figures according to a varying set of columns to use as the groupings"""
     enrollment_count = enrollment_df.groupby([index_col] + grouping_cols).size().reset_index(name=count_col_name).fillna({count_col_name:fill_na_value})
     if cumsum:
         enrollment_count['Cumulative'] = enrollment_count.groupby(grouping_cols)[count_col_name].cumsum()
@@ -209,6 +210,7 @@ def enrollment_rollup(enrollment_df, index_col, grouping_cols, count_col_name, c
 # PerformanceWarning: dropping on a non-lexsorted multi-index without a level parameter may impact performance.
 #   site_enrollments = site_enrollments.set_index(['Month','Year']).drop(columns='obtain_month')
 def get_site_enrollments(enrollment_count, mcc):
+    """ Get enrollments by particular MCC and site """
     site_enrollments = enrollment_count[enrollment_count.mcc == mcc]
     site_enrollments = pd.pivot(site_enrollments, index=['obtain_month'], columns = 'Site', values=['Monthly','Cumulative'])
     site_enrollments = site_enrollments.swaplevel(0,1, axis=1).sort_index(axis=1).reindex(['Monthly','Cumulative'], level=1, axis=1).reset_index()
@@ -218,6 +220,7 @@ def get_site_enrollments(enrollment_count, mcc):
     return site_enrollments
 
 def get_enrollment_expectations():
+    """Generate a pdf of enrollment expectations.  These are currently hardcoded here as a dictionary, but could be externalized"""
     enrollment_expectations_dict = {'mcc': ['1','1','2','2'],
                                 'surgery_type':['TKA','Thoracic','Thoracic','TKA'],
                                 'start_month': ['02/22','06/22','02/22','06/22'],
@@ -277,14 +280,22 @@ def rollup_enrollment_expectations(enrollment_df, enrollment_expectations_df, mo
 
     # Add Site name column
     ee_rollup['Site'] = ee_rollup.apply(lambda x: 'MCC' + str(x['mcc']) + ' (' + x['surgery_type'] + ')',axis=1)
+
+    # TODO: Put these in their own function to create table for 
+    # ee_rollup_cols = ['Site','Month', 'Actual: Monthly', 'Actual: Cumulative',
+    #    'Expected: Monthly', 'Expected: Cumulative', 'Percent: Monthly','Percent: Cumulative']
+
+    # ee_rollup = ee_rollup[ee_rollup_cols]
+
+    return ee_rollup
+
+def format_rollup_enrollment_expectations(ee_rollup):
+    """ Format for display: subset of columns in proper order"""
     ee_rollup_cols = ['Site','Month', 'Actual: Monthly', 'Actual: Cumulative',
        'Expected: Monthly', 'Expected: Cumulative', 'Percent: Monthly','Percent: Cumulative']
 
     ee_rollup = ee_rollup[ee_rollup_cols]
-
     return ee_rollup
-
-
 # # ----------------------------------------------------------------------------
 # # GET DATA FOR PAGE
 # # ----------------------------------------------------------------------------
