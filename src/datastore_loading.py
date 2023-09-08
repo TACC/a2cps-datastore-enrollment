@@ -18,7 +18,7 @@ def get_api_data(api_address):
     try:
         try:
             response = requests.get(api_address)
-        except:
+        except Exception as e:
             return('error: {}'.format(e))
         request_status = response.status_code
         if request_status == 200:
