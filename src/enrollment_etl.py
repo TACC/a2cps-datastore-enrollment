@@ -205,6 +205,9 @@ def enrollment_rollup(enrollment_df, index_col, grouping_cols, count_col_name, c
 
     return enrollment_count
 
+## TOD: This function is throwing the following warning:
+# PerformanceWarning: dropping on a non-lexsorted multi-index without a level parameter may impact performance.
+#   site_enrollments = site_enrollments.set_index(['Month','Year']).drop(columns='obtain_month')
 def get_site_enrollments(enrollment_count, mcc):
     site_enrollments = enrollment_count[enrollment_count.mcc == mcc]
     site_enrollments = pd.pivot(site_enrollments, index=['obtain_month'], columns = 'Site', values=['Monthly','Cumulative'])
@@ -245,7 +248,7 @@ def get_enrollment_expectations_monthly(enrollment_expectations_df):
                        'Month': month,
                        'Expected: Monthly': expected_monthly_series[index],
                        'Expected: Cumulative': expected_start_count+index*expected_monthly}
-            mcc_type_expectations = mcc_type_expectations.append(new_row, ignore_index=True)
+            mcc_type_expectations = pd.concat([mcc_type_expectations, pd.DataFrame([new_row])], ignore_index=True)
 
     return mcc_type_expectations
 
