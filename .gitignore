@@ -1,6 +1,7 @@
 # Local files for development purposes
 data/
 .env
+src/data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
