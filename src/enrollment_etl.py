@@ -278,6 +278,9 @@ def rollup_enrollment_expectations(enrollment_df, enrollment_expectations_df, mo
     ee_rollup['Percent: Cumulative'] = (100 * ee_rollup['Actual: Cumulative'] / ee_rollup['Expected: Cumulative']).round(1).astype(str) + '%'
     ee_rollup.loc[ee_rollup['Actual: Monthly'] == 0, 'Percent: Monthly'] = ''
 
+    ee_rollup['Date: Year'] = ee_rollup['Month'].dt.strftime("%Y")
+    ee_rollup['Date: Month'] = ee_rollup['Month'].dt.strftime("%B")
+    
     # Add Site name column
     ee_rollup['Site'] = ee_rollup.apply(lambda x: 'MCC' + str(x['mcc']) + ' (' + x['surgery_type'] + ')',axis=1)
 

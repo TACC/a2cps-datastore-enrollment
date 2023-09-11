@@ -12,6 +12,9 @@ import dash_bootstrap_components as dbc
 from dash import Dash, callback, clientside_callback, html, dcc, dash_table, Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
 
+# Plotly
+import plotly.express as px
+
 # import local modules
 from config_settings import *
 from datastore_loading import *
@@ -112,7 +115,6 @@ def serve_layout():
     # Get data from API
     api_address = DATASTORE_URL + 'subjects'
     api_json = get_api_data(api_address)
-    print(api_json['data'].keys())
 
     # Initate page components
     page_meta_dict, enrollment_dict = {'report_date_msg':''}, {}
@@ -125,6 +127,10 @@ def serve_layout():
     page_meta_dict['report_range_msg'] = report_range_msg
     # print(page_meta_dict)
 
+    if api_json['date']:
+        page_meta_dict['data_date'] = api_json['date']
+    else:
+        page_meta_dict['data_date'] = 'Data Date Unavailable'
 
     if api_json['data']['consented']:                
         consented = pd.DataFrame(api_json['data']['consented'])
@@ -180,7 +186,7 @@ def serve_layout():
             tab_summary_content_children.append(tup_section)
 
     ### BUILD PAGE COMPONENTS
-        data_source = 'Data Source: ' + page_meta_dict['data_source']
+        # data_source = 'Data Source: ' + page_meta_dict['data_source']  # TO DO: ADD THIS BACK IN IF DATASTORE UPDATED TO PROVIDE IT
         data_date = 'Data Date: ' + page_meta_dict['data_date']
 
         tab_enrollments = html.Div([
@@ -206,7 +212,7 @@ def serve_layout():
                     ]),
                     ])
     else:
-        data_source = 'unavailable'
+        # data_source = 'unavailable'
         data_date = 'unavailable'
         tabs = 'Data unavailable'
 
@@ -228,7 +234,7 @@ def serve_layout():
 
                 dbc.Row([
                     dbc.Col([
-                        html.P(data_source),
+                        # html.P(data_source),
                         html.P(data_date),
                     ], width=6),
                     dbc.Col([
