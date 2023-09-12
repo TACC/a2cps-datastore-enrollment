@@ -161,7 +161,8 @@ def get_enrollment_dataframe(consented_df):
     try:
         # Select Subset of columns
         enroll_cols = ['record_id','main_record_id','obtain_date','ewdateterm','mcc', 'screening_site', 'surgery_type']
-        enrollment = consented_df[enroll_cols].copy()
+        # Exclute subjects who withdrew early
+        enrollment = consented_df[consented_df['ewdateterm']=='NaT'][enroll_cols].copy() 
 
         # Convert datetime colums and calculate new
         datetime_cols = ['obtain_date','ewdateterm']
