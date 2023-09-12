@@ -1,63 +1,24 @@
-# Generic Template Reporting for the A2CPS program
-Docker container of Dash App to display A2CPS trial Generic Template reporting metrics.
+# Monthly Enrollment report 
+Report to plot monthly enrollments by site and surgery
 
 
 ## Version History
 | Version   | Date | Description |
 | ------ | ------ | ------ |
-| 0.0.1 | date | Status |
+| 0.0.1 | 2022 | Original verion |
+| 0.0.2 | 9/12/2023 | Conversion to Datastore model |
 
 
-# Development Previews
+## Data Transformation Description
+1. Report uses the data api for consented subjects
+2. 'Enrolled' subjects are defined as all consented subjects who have not withdrawn early from the program 
+3. Records for each site and surgery are rolled up on a monthly basis based on the orginal consent date
+4. Actual enrollments are compared to expected enrollments that are defined according to the following table
 
-Development previews are built upon commits to the master branch. If you wish to preview the latest
-build, you may use the `docker-compose.yml` file. On your local machine with Docker, run:
-
-```
-docker-compose up --force-recreate
-```
-
-Then browse to `localhost:8050` in your web browser.
-
-# Automatic Container Build information from parent repository.
-This repository was forked from the TACC [dash-container](https://github.com/TACC/dash-container) repo.  
-
-## Configuring your repository for automatic container builds (text from original repo)
-
-### Github Actions workflows
-
-This repository comes with two Github Action workflows that automatically build Docker containers:
-
-- [build-pr](./github/workflows/build-pr) builds commit sha tagged
-images upon pull requests
-- [build-main](./github/workflows/build-main) builds a commit sha tagged and `:latest` tagged image upon
-pushes to main (such as when merging a pull request)
-
-Both require specific Github repo configuration.
-
-### Setting up a Dockerhub token
-
-You will need to create a token for the account that will be used to push your repo.
-
-- On [Dockerhub](https://hub.docker.com) go to your account's [security settings](https://hub.docker.com/settings/security).
-- Click the **New Access Token** button and type in a description
-- You will see a UUID value - this is your access token. Copy it immediately, as these can only
-be read upon creation. You will not see this token again.
-
-### Setting up a Github Actions environment
-
-You will need to create a build environment with secrets to contain Dockerhub settings.
-
-- In your Github repo, click on **Settings**. Then click on **Environments**
-- Click on the **New Environment** button and name this environment `docker`. (You can change the
-`environment` value in the workflows if you wish to call it something else or keep multiple environments)
-- At the bottom of the screen you will see **Environment Secrets**. Click the **Add Secret** button to create secrets.
-- Create a secret called `DOCKERHUB_TOKEN` and paste your Dockerhub token here
-- Create a secret called `DOCKERHUB_USERNAME` and put the name of the corresponding user here
-- Create a secret called `DOCKERHUB_REPO` and put your Docker repository name here. For example, this Github repo
-autobuilds images at `jchuahtacc/dash-container`, so that is the value that is used for `DOCKERHUB_REPO`.
-
-### Test it out
-
-Upon pull requests and pushes to main, you will see the workflows perform autobuilds. You can
-view the Action results by going to the **Actions** tag of your repo. You can also go to your [Dockerhub](https://hub.docker.com) page and make sure images are properly getting tagged and pushed
+### Enrollment Expectations
+| MCC | Surgery   | Start  | Expected at Start | Additional Monthly | 
+| ------ | ------ | ------ | ------ | ------ |
+| 1 | TKA | 2/22 | 280 | 30 |
+| 1 | Thoracic | 6/22 | 10 | 10 |
+| 2 | Thoracic | 2/22 | 70 | 30 |
+| 2 | TKA | 6/22 | 10 | 10 |
