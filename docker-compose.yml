@@ -3,7 +3,7 @@
 ---
 version: "3"
 services:
-  datastore_api_simple:
+  datastore_enrollment:
     build: . 
     ports:
       - 8890:8050

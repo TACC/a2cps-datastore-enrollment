@@ -3,6 +3,7 @@ import requests
 import flask
 import traceback
 
+
 import requests
 import json
 import pandas as pd
@@ -11,6 +12,9 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 from dash import Dash, callback, clientside_callback, html, dcc, dash_table, Input, Output, State, MATCH, ALL
 from dash.exceptions import PreventUpdate
+
+from dash_extensions import Download
+from dash_extensions.snippets import send_file
 
 # Plotly
 import plotly.express as px
@@ -40,6 +44,13 @@ display_terms, display_terms_dict, display_terms_dict_multi = load_display_terms
 # ----------------------------------------------------------------------------
 # FUNCTIONS FOR DASH UI COMPONENTS
 # ----------------------------------------------------------------------------
+def store_multiindex_data(df):
+    table_columns, table_data = datatable_settings_multiindex(df)
+    data_dict = {}
+    data_dict['columns'] = table_columns
+    data_dict['data'] = table_data
+    return data_dict
+
 def build_datatable_multi(df, table_id, fill_width = False):
     table_columns, table_data = datatable_settings_multiindex(df)
     new_datatable = build_datatable(table_id, table_columns, table_data, fill_width)
@@ -80,6 +91,8 @@ def build_datatable(table_id, table_columns, table_data, fill_width = False):
     except Exception as e:
         traceback.print_exc()
         return None
+    
+
 
 # ---------------------------------
 #   MOVE THIS TO ETL FILE
@@ -125,6 +138,7 @@ def serve_layout():
     today, start_report, end_report, report_date_msg, report_range_msg  = get_time_parameters(report_date)
     page_meta_dict['report_date_msg'] = report_date_msg
     page_meta_dict['report_range_msg'] = report_range_msg
+    print_table_dict = {}
     # print(page_meta_dict)
 
     if api_json['date']:
@@ -137,8 +151,13 @@ def serve_layout():
         enrolled =  get_enrollment_dataframe(consented)
         
         enrollment_count = enrollment_rollup(enrolled, 'obtain_month', ['mcc','screening_site','surgery_type','Site'], 'Monthly')
-        mcc1_enrollments = get_site_enrollments(enrollment_count, 1).reset_index()
+        mcc1_enrollments = get_site_enrollments(enrollment_count, 1).reset_index()        
+        print_table_dict['MCC 1 Site Enrollment'] = store_multiindex_data(mcc1_enrollments) # mcc1_enrollments.to_dict('records')
+        
         mcc2_enrollments = get_site_enrollments(enrollment_count, 2).reset_index()
+        print_table_dict['MCC 2 Site Enrollment']  = store_multiindex_data(mcc2_enrollments) #  mcc2_enrollments.to_dict('records'),
+
+
         
         enrollment_expectations_df = get_enrollment_expectations()
         monthly_expectations = get_enrollment_expectations_monthly(enrollment_expectations_df)
@@ -215,8 +234,12 @@ def serve_layout():
         # data_source = 'unavailable'
         data_date = 'unavailable'
         tabs = 'Data unavailable'
+        print_table_dict['tables'] = {'None Found'}
 
     page_layout = html.Div([
+        dcc.Store(id='store_meta', data = page_meta_dict),
+        dcc.Store(id='store_tables', data = print_table_dict),
+        Download(id="download-dataframe-xlxs"),
         dcc.Loading(
             id="loading-2",
             children=[
@@ -239,6 +262,7 @@ def serve_layout():
                     ], width=6),
                     dbc.Col([
                         html.Button("Download as Excel",n_clicks=0, id="btn_xlxs",style =EXCEL_EXPORT_STYLE ),
+                        html.Div(id='test-div')
                     ], width=6, style={'text-align': 'right'}),
                 ]),
 
@@ -271,7 +295,7 @@ app = Dash(__name__,
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}],
                 assets_folder=ASSETS_PATH,
                 requests_pathname_prefix=os.environ.get("REQUESTS_PATHNAME_PREFIX", "/"),
-                suppress_callback_exceptions=True
+                suppress_callback_exceptions=False
                 )
 
 
@@ -285,6 +309,49 @@ if __name__ == '__main__':
     app.run_server(debug=True)
 else:
     server = app.server
-# ---------------------------------
-#   Callbacks
-# ---------------------------------
+
+# ----------------------------------------------------------------------------
+# DATA CALLBACKS
+# ----------------------------------------------------------------------------
+
+
+# Create excel spreadsheel
+@app.callback(
+        Output("download-dataframe-xlxs", "data"),
+        # Output('test-div','children'),
+        Input("btn_xlxs", "n_clicks"), 
+        State("store_tables","data")
+        )
+def click_excel(n_clicks, table_dict):
+    if n_clicks == None:
+        raise PreventUpdate
+    if table_dict:
+        try:
+            today = datetime.now().strftime('%Y_%m_%d')
+            download_filename = datetime.now().strftime('%Y_%m_%d') + '_a2cps_enrollment_report_data.xlsx'
+
+            writer = pd.ExcelWriter(download_filename, engine='xlsxwriter')
+            tables = list(table_dict.keys())
+            for table in tables:
+                excel_sheet_name = table
+                df = pd.DataFrame(table_dict[table]['data'])
+                # convert multiindex columns and remove the '_'
+                new_cols = []
+                for i in list(df.columns):
+                    if i[0] == '_':
+                        new_cols.append(i[1:])
+                    else:
+                        new_cols.append(i.replace('_',': '))
+                df.columns = new_cols
+
+                if len(df) == 0 :
+                    df = pd.DataFrame(columns =['No data for this table'])
+                df.to_excel(writer, sheet_name=excel_sheet_name, index = False)
+            
+            writer.save()
+            excel_file =  send_file(writer, download_filename)
+            return excel_file
+
+        except Exception as e:
+            traceback.print_exc()
+            return None
