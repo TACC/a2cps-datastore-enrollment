@@ -125,9 +125,7 @@ enrollment_cols = ['record_id','main_record_id','obtain_date','ewdateterm', 'mcc
 #   Serve layout
 # ---------------------------------
 def serve_layout():
-    # Get data from API
-    api_address = DATASTORE_URL + 'subjects'
-    api_json = get_api_data(api_address)
+
 
     # Initate page components
     page_meta_dict, enrollment_dict = {'report_date_msg':''}, {}
@@ -139,102 +137,110 @@ def serve_layout():
     page_meta_dict['report_date_msg'] = report_date_msg
     page_meta_dict['report_range_msg'] = report_range_msg
     print_table_dict = {}
-    # print(page_meta_dict)
 
-    if api_json['date']:
-        page_meta_dict['data_date'] = api_json['date']
-    else:
-        page_meta_dict['data_date'] = 'Data Date Unavailable'
+    # Get data from API
+    api_address = DATASTORE_URL + 'subjects'
+    api_json = get_api_data(api_address)
+    print(api_json)
+    
+    try:        
 
-    if api_json['data']['consented']:                
-        consented = pd.DataFrame(api_json['data']['consented'])
-        enrolled =  get_enrollment_dataframe(consented)
-        
-        enrollment_count = enrollment_rollup(enrolled, 'obtain_month', ['mcc','screening_site','surgery_type','Site'], 'Monthly')
-        mcc1_enrollments = get_site_enrollments(enrollment_count, 1).reset_index()        
-        print_table_dict['MCC 1 Site Enrollment'] = store_multiindex_data(mcc1_enrollments) # mcc1_enrollments.to_dict('records')
-        
-        mcc2_enrollments = get_site_enrollments(enrollment_count, 2).reset_index()
-        print_table_dict['MCC 2 Site Enrollment']  = store_multiindex_data(mcc2_enrollments) #  mcc2_enrollments.to_dict('records'),
+        if api_json['date']:
+            page_meta_dict['data_date'] = api_json['date']
+        else:
+            page_meta_dict['data_date'] = 'Data Date Unavailable'
 
-
-        
-        enrollment_expectations_df = get_enrollment_expectations()
-        monthly_expectations = get_enrollment_expectations_monthly(enrollment_expectations_df)
-        summary_rollup = rollup_enrollment_expectations(enrolled, enrollment_expectations_df, monthly_expectations)
-        summary_rollup_formatted = format_rollup_enrollment_expectations(summary_rollup)
-        
-        expected_plot_df = get_plot_date(enrolled, summary_rollup)
-        summary_options_list = [(x, y) for x in summary_rollup.mcc.unique() for y in summary_rollup.surgery_type.unique()]
-        tab_summary_content_children = []
-
-        for tup in summary_options_list:
-            tup_summary = summary_rollup[(summary_rollup.mcc == tup[0]) & (summary_rollup.surgery_type == tup[1])]
-            plot_df = expected_plot_df[(expected_plot_df.mcc == tup[0]) & (expected_plot_df.surgery_type == tup[1])]
-
-            if len(tup_summary) > 0:
-                table_cols = ['Date: Year', 'Date: Month', 'Actual: Monthly', 'Actual: Cumulative',
-                                'Expected: Monthly', 'Expected: Cumulative', 'Percent: Monthly','Percent: Cumulative']
-                tup_df = tup_summary.set_index('Month')[table_cols].sort_index(ascending=True)
-                tup_stup_table_df = convert_to_multindex(tup_df)
-                table_id = 'table_mcc'+ str(tup[0])+'_'+tup[1]
-                figure_id = 'figure_mcc'+ str(tup[0])+'_'+tup[1]
-                tup_table = build_datatable_multi(tup_stup_table_df, table_id)
-                plot_title = 'Cumulative enrollment: MCC' + str(tup[0])+' ('+tup[1] +')'
-                tup_fig = px.line(plot_df, x="Month", y="Cumulative", title=plot_title, color = 'type')
-                tup_fig_div = dcc.Graph(figure = tup_fig, id=figure_id)
-            else:
-                tup_message = 'There is currently no data for ' + tup[1] + ' surgeries at MCC' + str(tup[0])
-                tup_table = html.Div(tup_message)
-                tup_fig_div = html.Div()
-
-            tup_section = html.Div([
-                dbc.Row([
-                    dbc.Col([html.H2('MCC' + str(tup[0]) + ': ' + tup[1]),])
-                ]),
-                dbc.Row([
-                    dbc.Col([html.Div(tup_table)])
-                ]),
-                dbc.Row([
-                    dbc.Col([html.Div(tup_fig_div)])
-                ]),
+        if api_json['data']['consented']:                
+            consented = pd.DataFrame(api_json['data']['consented'])
+            enrolled =  get_enrollment_dataframe(consented)
+            
+            enrollment_count = enrollment_rollup(enrolled, 'obtain_month', ['mcc','screening_site','surgery_type','Site'], 'Monthly')
+            mcc1_enrollments = get_site_enrollments(enrollment_count, 1).reset_index()        
+            print_table_dict['MCC 1 Site Enrollment'] = store_multiindex_data(mcc1_enrollments) # mcc1_enrollments.to_dict('records')
+            
+            mcc2_enrollments = get_site_enrollments(enrollment_count, 2).reset_index()
+            print_table_dict['MCC 2 Site Enrollment']  = store_multiindex_data(mcc2_enrollments) #  mcc2_enrollments.to_dict('records'),
 
 
-            ], style={'margin-bottom':'20px'})
+            
+            enrollment_expectations_df = get_enrollment_expectations()
+            monthly_expectations = get_enrollment_expectations_monthly(enrollment_expectations_df)
+            summary_rollup = rollup_enrollment_expectations(enrolled, enrollment_expectations_df, monthly_expectations)
+            summary_rollup_formatted = format_rollup_enrollment_expectations(summary_rollup)
+            
+            expected_plot_df = get_plot_date(enrolled, summary_rollup)
+            summary_options_list = [(x, y) for x in summary_rollup.mcc.unique() for y in summary_rollup.surgery_type.unique()]
+            tab_summary_content_children = []
 
-            tab_summary_content_children.append(tup_section)
+            for tup in summary_options_list:
+                tup_summary = summary_rollup[(summary_rollup.mcc == tup[0]) & (summary_rollup.surgery_type == tup[1])]
+                plot_df = expected_plot_df[(expected_plot_df.mcc == tup[0]) & (expected_plot_df.surgery_type == tup[1])]
 
-    ### BUILD PAGE COMPONENTS
-        # data_source = 'Data Source: ' + page_meta_dict['data_source']  # TO DO: ADD THIS BACK IN IF DATASTORE UPDATED TO PROVIDE IT
-        data_date = 'Data Date: ' + page_meta_dict['data_date']
+                if len(tup_summary) > 0:
+                    table_cols = ['Date: Year', 'Date: Month', 'Actual: Monthly', 'Actual: Cumulative',
+                                    'Expected: Monthly', 'Expected: Cumulative', 'Percent: Monthly','Percent: Cumulative']
+                    tup_df = tup_summary.set_index('Month')[table_cols].sort_index(ascending=True)
+                    tup_stup_table_df = convert_to_multindex(tup_df)
+                    table_id = 'table_mcc'+ str(tup[0])+'_'+tup[1]
+                    figure_id = 'figure_mcc'+ str(tup[0])+'_'+tup[1]
+                    tup_table = build_datatable_multi(tup_stup_table_df, table_id)
+                    plot_title = 'Cumulative enrollment: MCC' + str(tup[0])+' ('+tup[1] +')'
+                    tup_fig = px.line(plot_df, x="Month", y="Cumulative", title=plot_title, color = 'type')
+                    tup_fig_div = dcc.Graph(figure = tup_fig, id=figure_id)
+                else:
+                    tup_message = 'There is currently no data for ' + tup[1] + ' surgeries at MCC' + str(tup[0])
+                    tup_table = html.Div(tup_message)
+                    tup_fig_div = html.Div()
 
-        tab_enrollments = html.Div([
-            html.H2('MCC 1'),
-            build_datatable_multi(mcc1_enrollments, 'mcc1_datatable'),
-            html.H2('MCC 2'),
-            build_datatable_multi(mcc2_enrollments, 'mcc2_datatable')
-            ])
-
-        tab_summary_content = html.Div(
-            tab_summary_content_children
-        )
-
-        tabs = html.Div([
-                    dcc.Tabs(id='tabs_tables', children=[
-                        dcc.Tab(label='Site Enrollments', id='tab_1', children=[
-                            html.Div([tab_enrollments], id='section_1'),
-                        ]),
-                        dcc.Tab(label="Site / Surgery Summary", id='tab_3', children=[
-                            html.Div([tab_summary_content], id='section_3'),
-                        ]),
-
+                tup_section = html.Div([
+                    dbc.Row([
+                        dbc.Col([html.H2('MCC' + str(tup[0]) + ': ' + tup[1]),])
                     ]),
-                    ])
-    else:
+                    dbc.Row([
+                        dbc.Col([html.Div(tup_table)])
+                    ]),
+                    dbc.Row([
+                        dbc.Col([html.Div(tup_fig_div)])
+                    ]),
+
+
+                ], style={'margin-bottom':'20px'})
+
+                tab_summary_content_children.append(tup_section)
+
+        ### BUILD PAGE COMPONENTS
+            # data_source = 'Data Source: ' + page_meta_dict['data_source']  # TO DO: ADD THIS BACK IN IF DATASTORE UPDATED TO PROVIDE IT
+            data_date = 'Data Date: ' + page_meta_dict['data_date']
+
+            tab_enrollments = html.Div([
+                html.H2('MCC 1'),
+                build_datatable_multi(mcc1_enrollments, 'mcc1_datatable'),
+                html.H2('MCC 2'),
+                build_datatable_multi(mcc2_enrollments, 'mcc2_datatable')
+                ])
+
+            tab_summary_content = html.Div(
+                tab_summary_content_children
+            )
+
+            tabs = html.Div([
+                        dcc.Tabs(id='tabs_tables', children=[
+                            dcc.Tab(label='Site Enrollments', id='tab_1', children=[
+                                html.Div([tab_enrollments], id='section_1'),
+                            ]),
+                            dcc.Tab(label="Site / Surgery Summary", id='tab_3', children=[
+                                html.Div([tab_summary_content], id='section_3'),
+                            ]),
+
+                        ]),
+                        ])
+        else:
         # data_source = 'unavailable'
-        data_date = 'unavailable'
-        tabs = 'Data unavailable'
-        print_table_dict['tables'] = {'None Found'}
+            data_date = 'unavailable'
+            tabs = 'Data unavailable'
+            print_table_dict['tables'] = {'None Found'}
+    except:
+        page_meta_dict['data_date'] = 'No Date Unavailable'
 
     page_layout = html.Div([
         dcc.Store(id='store_meta', data = page_meta_dict),
@@ -295,7 +301,7 @@ app = Dash(__name__,
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}],
                 assets_folder=ASSETS_PATH,
                 requests_pathname_prefix=os.environ.get("REQUESTS_PATHNAME_PREFIX", "/"),
-                suppress_callback_exceptions=False
+                suppress_callback_exceptions=True
                 )
 
 
@@ -323,7 +329,7 @@ else:
         State("store_tables","data")
         )
 def click_excel(n_clicks, table_dict):
-    if n_clicks == None:
+    if n_clicks == 0:
         raise PreventUpdate
     if table_dict:
         try:
