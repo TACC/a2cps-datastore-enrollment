@@ -142,7 +142,7 @@ def serve_layout():
     api_address = DATASTORE_URL + 'subjects'
     api_json = get_api_data(api_address)
     print(api_json)
-    
+
     try:        
 
         if api_json['date']:
@@ -160,8 +160,6 @@ def serve_layout():
             
             mcc2_enrollments = get_site_enrollments(enrollment_count, 2).reset_index()
             print_table_dict['MCC 2 Site Enrollment']  = store_multiindex_data(mcc2_enrollments) #  mcc2_enrollments.to_dict('records'),
-
-
             
             enrollment_expectations_df = get_enrollment_expectations()
             monthly_expectations = get_enrollment_expectations_monthly(enrollment_expectations_df)
@@ -182,6 +180,9 @@ def serve_layout():
                     tup_df = tup_summary.set_index('Month')[table_cols].sort_index(ascending=True)
                     tup_stup_table_df = convert_to_multindex(tup_df)
                     table_id = 'table_mcc'+ str(tup[0])+'_'+tup[1]
+                    # Add to table dict for export to excel
+                    print_table_dict[table_id]  = store_multiindex_data(tup_stup_table_df)
+
                     figure_id = 'figure_mcc'+ str(tup[0])+'_'+tup[1]
                     tup_table = build_datatable_multi(tup_stup_table_df, table_id)
                     plot_title = 'Cumulative enrollment: MCC' + str(tup[0])+' ('+tup[1] +')'
