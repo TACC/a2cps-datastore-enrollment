@@ -3,8 +3,24 @@
 ---
 version: "3"
 services:
-  a2cps_report_template__dash:
-    image: wmatacc/a2cpsi-report-template-dash:latest
+  datastore_enrollment:
+    build: . 
     ports:
-      - 8050:8050
-    container_name: a2cps_report_template_dash
+      - 8890:8050
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    stdin_open: true
+    tty: true
+    command: ["gunicorn", "--reload", "-b :8050",  "-t 90", "app:server"]
+    container_name: datastore_enrollment
+    hostname: datastore_enrollment
+    volumes:
+      - ./src:/app
+    env_file:
+      - ./.env
+
+networks:
+  default:
+    name: a2cps_datastore_net
+    external: true
