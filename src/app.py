@@ -3,7 +3,7 @@ import requests
 import flask
 import traceback
 
-
+import logging
 import requests
 import json
 import pandas as pd
@@ -140,8 +140,21 @@ def serve_layout():
 
     # Get data from API
     api_address = DATASTORE_URL + 'subjects'
+    app.logger.info('Requesting data from api {0}'.format(api_address))
     api_json = get_api_data(api_address)
-    print(api_json)
+
+    if 'error' in api_json:
+        app.logger.info('Error response from datastore: {0}'.format(api_json))
+        if 'error_code' in api_json:
+            error_code = api_json['error_code']
+            if error_code in ('MISSING_SESSION_ID', 'INVALID_TAPIS_TOKEN'):
+                app.logger.warn('Auth error from datastore, asking user to authenticate')
+                return html.Div([ html.H4('Please login and authenticate on the portal to access the report.')])
+
+    # ignore cache and request again.
+    if 'data' not in api_json:
+        app.logger.info('Requesting data from api {0} to ignore cache.'.format(api_address))
+        api_json = get_api_data(api_address, True)
 
     try:        
 
