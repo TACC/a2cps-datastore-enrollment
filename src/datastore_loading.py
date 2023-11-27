@@ -3,12 +3,14 @@ import flask
 import requests
 import logging
 
+
 # ---------------------------------
 #   MOVE THIS TO REFERENCE FROM ENV
 # ---------------------------------
 DATASTORE_URL = os.environ.get("DATASTORE_URL","url not found")
 DATASTORE_URL = os.path.join(DATASTORE_URL, "api/")
 logger  = logging.getLogger("imaging_app")
+
 
 # ---------------------------------
 #   Get Data From datastore
@@ -28,5 +30,3 @@ def get_api_data(api_address, ignore_cache=False):
         return response.json()
     except Exception as e:
         logger.warn(e)
-        api_json['json'] = 'error: {}'.format(e)
-        return api_json

@@ -4,6 +4,7 @@ import flask
 import traceback
 
 import logging
+
 import requests
 import json
 import pandas as pd
@@ -272,7 +273,6 @@ def serve_layout():
                     dbc.Col([
                         html.P('Version date: 06/29/2023')
                     ], width=3),
-
                 ]),
 
                 dbc.Row([
