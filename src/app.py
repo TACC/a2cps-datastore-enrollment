@@ -8,7 +8,7 @@ import logging
 import requests
 import json
 import pandas as pd
-import from gunicorn.glogging import Logger
+from gunicorn.glogging import Logger
 
 
 # Dash Framework
