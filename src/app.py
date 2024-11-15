@@ -8,7 +8,6 @@ import logging
 import requests
 import json
 import pandas as pd
-from gunicorn.glogging import Logger
 
 
 # Dash Framework
@@ -323,12 +322,6 @@ app = Dash(__name__,
 
 app.layout = serve_layout
 
-
-class CustomGunicornLogger(Logger):
-    def access(self, resp, req, environ, request_time):
-        super().access(resp, req, environ, request_time)
-        app.logger.info(f"{req.method} {req.path} - {resp.status} in {request_time:.2f}s")
-
 # ----------------------------------------------------------------------------
 # RUN APPLICATION
 # ----------------------------------------------------------------------------
@@ -340,7 +333,6 @@ else:
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
-    server.logger_class = CustomGunicornLogger
 
 # ----------------------------------------------------------------------------
 # DATA CALLBACKS
